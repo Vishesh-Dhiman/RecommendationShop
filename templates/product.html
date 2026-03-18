@@ -41,7 +41,7 @@
         <span id="det-save"  class="det-save" style="display:none"></span>
       </div>
       <div id="det-save-note" class="det-save-note" style="display:none"></div>
-      <div class="det-offer">🏦 5% cashback on ShopDesi Card &nbsp;·&nbsp; No cost EMI</div>
+      <div class="det-offer">🏦 5% cashback on ShopDeals Card &nbsp;·&nbsp; No cost EMI</div>
     </div>
     <table id="det-meta" class="det-meta-table"></table>
     <div class="det-actions">
@@ -77,7 +77,7 @@ async function loadProduct() {
     const p = d.product;
     S.cartIds = d.cart_ids || [];
     updateCartBadge(S.cartIds.length);
-    document.getElementById('pg-title').textContent = p.name + ' — ShopDesi';
+    document.getElementById('pg-title').textContent = p.name + ' — ShopDeals';
 
     // Breadcrumb
     document.getElementById('breadcrumb').innerHTML =
@@ -120,7 +120,7 @@ async function loadProduct() {
       <tr><td>Popularity</td><td>${fmt(p.popularity)}+ sold</td></tr>
       <tr><td>Product ID</td><td>#SD${String(p.id).padStart(4,'0')}</td></tr>`;
     document.getElementById('det-desc').textContent = p.description +
-      ` Rated ${p.rating}/5 by ${fmt(p.reviews)} verified customers on ShopDesi.`;
+      ` Rated ${p.rating}/5 by ${fmt(p.reviews)} verified customers on ShopDeals.`;
     updateDetCartBtn(d.in_cart);
 
     // Show
