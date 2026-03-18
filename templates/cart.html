@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="cart-page">
+  <div class="cart-page-head">
+    <h2>🛒 Shopping Cart</h2>
+    <span id="cart-hd-count"></span>
+  </div>
+  <div id="cart-loading" style="padding:20px">Loading…</div>
+  <div id="cart-empty"   style="display:none" class="empty-cart-box">
+    <div style="font-size:56px">🛒</div>
+    <h3>Your cart is empty</h3>
+    <p>Add products to get started</p>
+    <a href="/" class="det-cart-btn" style="display:inline-flex;width:auto;padding:12px 28px;margin-top:12px">Shop Now</a>
+  </div>
+  <div id="cart-content" class="cart-layout" style="display:none">
+    <div id="cart-items-col"></div>
+    <div class="cart-summary" id="cart-summary"></div>
+  </div>
+  <div id="s-cart-recs" style="display:none"></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+window._pageInit = async function() {
+  await loadCart();
+  const rr = await fetch('/api/recommendations');
+  const rd = await rr.json();
+  renderStrip('s-cart-recs', rd.cart_based, rd.cart_ids||[],
+    '💡 Customers Also Bought', 'Cart-Based',
+    'TF-IDF similarity based on your cart items. Products that complement what you\'re buying.');
+};
+async function loadCart() {
+  const r = await fetch('/api/cart/items');
+  const d = await r.json();
+  document.getElementById('cart-loading').style.display = 'none';
+  S.cartIds = d.cart_ids || [];
+  updateCartBadge(S.cartIds.length);
+  document.getElementById('cart-hd-count').textContent =
+    d.items.length + ' item' + (d.items.length!==1?'s':'');
+  if (!d.items.length) {
+    document.getElementById('cart-empty').style.display = 'flex';
+    return;
+  }
+  document.getElementById('cart-content').style.display = '';
+  const totalMRP   = d.items.reduce((s,p)=>s+p.mrp,0);
+  const totalPrice = d.items.reduce((s,p)=>s+p.price,0);
+  const savings    = totalMRP - totalPrice;
+  document.getElementById('cart-items-col').innerHTML = d.items.map(p=>`
+    <div class="cart-item" id="ci-${p.id}">
+      <div class="ci-img" style="background:${p.color_hex}" onclick="location.href='/product/${p.id}'">${p.subcategory}</div>
+      <div class="ci-body">
+        <div class="ci-brand">${p.brand}</div>
+        <div class="ci-name"><a href="/product/${p.id}">${p.name}</a></div>
+        <span class="ci-rating">${p.rating} ★</span>
+        <div class="ci-price-row">
+          <span class="ci-price">₹${fmt(p.price)}</span>
+          ${p.mrp>p.price?`<span class="ci-mrp">₹${fmt(p.mrp)}</span><span class="ci-save">Save ₹${fmt(p.mrp-p.price)}</span>`:''}
+        </div>
+      </div>
+      <button class="ci-remove" onclick="removeItem(${p.id})">✕ Remove</button>
+    </div>`).join('');
+  document.getElementById('cart-summary').innerHTML = `
+    <div class="summary-box">
+      <div class="sum-head">Price Summary</div>
+      <div class="sum-body">
+        <div class="sum-row"><span>Price (${d.items.length} items)</span><span>₹${fmt(totalMRP)}</span></div>
+        <div class="sum-row"><span>Discount</span><span style="color:#388e3c">−₹${fmt(savings)}</span></div>
+        <div class="sum-row"><span>Delivery</span><span style="color:#388e3c;font-weight:700">FREE</span></div>
+        <div class="sum-total"><span><strong>Total</strong></span><span><strong>₹${fmt(totalPrice)}</strong></span></div>
+        ${savings>0?`<div class="sum-savings">🎉 You save ₹${fmt(savings)}!</div>`:''}
+        <button class="sum-order-btn" onclick="checkout()">Place Order →</button>
+        <a href="/" class="sum-continue-btn">Continue Shopping</a>
+      </div>
+    </div>`;
+}
+async function removeItem(pid) {
+  const el = document.getElementById('ci-'+pid);
+  el.style.opacity='0'; el.style.transform='translateX(20px)'; el.style.transition='all .3s';
+  await fetch('/api/cart/remove',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:pid})});
+  setTimeout(()=>{ el.remove(); loadCart(); toast('Removed from cart','info'); },300);
+}
+async function checkout() {
+  const r = await fetch('/api/cart/checkout',{method:'POST'});
+  const d = await r.json();
+  toast('🎉 Order placed! ID: '+d.order_id,'success',4000);
+  setTimeout(()=>loadCart(),1200);
+}
+</script>
+{% endblock %}

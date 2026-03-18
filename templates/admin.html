@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Admin — ShopDesi</title>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+  <link rel="stylesheet" href="/static/css/admin.css"/>
+</head>
+<body class="admin-body">
+
+<aside class="admin-sidebar">
+  <div class="admin-logo">🔐 ShopDesi Admin</div>
+  <nav class="admin-nav">
+    <a class="anl active" data-tab="dashboard"  onclick="showTab(this,'dashboard')">📊 Dashboard</a>
+    <a class="anl"        data-tab="users"       onclick="showTab(this,'users')">👥 Users</a>
+    <a class="anl"        data-tab="products"    onclick="showTab(this,'products')">📦 Products</a>
+    <a class="anl"        data-tab="ml"          onclick="showTab(this,'ml')">🤖 ML Engine</a>
+    <a class="anl"        data-tab="settings"    onclick="showTab(this,'settings')">⚙️ Settings</a>
+  </nav>
+  <div class="admin-footer-links">
+    <a href="/" target="_blank">← Visit Store</a>
+    <a href="/admin/logout" class="logout-link">🚪 Logout</a>
+  </div>
+</aside>
+
+<main class="admin-main">
+
+  <!-- ── DASHBOARD ── -->
+  <div id="tab-dashboard" class="atab">
+    <div class="a-page-title">📊 Dashboard</div>
+    <div class="a-stats-grid" id="dash-stats"></div>
+
+    <div class="a-charts-row">
+      <!-- Category distribution donut -->
+      <div class="a-card chart-card">
+        <div class="a-card-title">📦 Products by Category</div>
+        <canvas id="chart-cat-dist" width="300" height="300"></canvas>
+      </div>
+      <!-- User interest heatmap -->
+      <div class="a-card chart-card flex1">
+        <div class="a-card-title">❤️ Interest Distribution (All Users)</div>
+        <div id="chart-interests"></div>
+      </div>
+      <!-- Category views bar -->
+      <div class="a-card chart-card flex1">
+        <div class="a-card-title">👁️ Category View Activity</div>
+        <div id="chart-cat-views"></div>
+      </div>
+    </div>
+
+    <div class="a-card mt-16">
+      <div class="a-card-title">🔥 Top Viewed Products</div>
+      <div id="dash-top-viewed"></div>
+    </div>
+  </div>
+
+  <!-- ── USERS ── -->
+  <div id="tab-users" class="atab" style="display:none">
+    <div class="a-page-title">👥 User Management</div>
+
+    <!-- User interest score chart -->
+    <div class="a-card mb-16">
+      <div class="a-card-title">📊 User Interaction Score Comparison</div>
+      <div id="chart-user-interactions"></div>
+    </div>
+
+    <!-- Per-user interest breakdown -->
+    <div class="a-card mb-16">
+      <div class="a-card-title">❤️ Interest Scores Per User</div>
+      <div id="chart-user-interests-detail"></div>
+    </div>
+
+    <div id="users-list"></div>
+  </div>
+
+  <!-- ── PRODUCTS ── -->
+  <div id="tab-products" class="atab" style="display:none">
+    <div class="a-page-title">📦 Product Catalog</div>
+    <div class="a-card">
+      <div class="prod-filters">
+        <select class="f-select" id="prod-cat" onchange="loadAdminProducts()">
+          <option value="">All Categories</option>
+        </select>
+        <input class="f-input" id="prod-q" placeholder="Search name / brand…" style="width:220px"
+               oninput="filterProdsLocal()"/>
+        <span id="prod-count" style="font-size:12px;color:var(--text-muted)"></span>
+      </div>
+      <div class="table-wrap">
+        <table class="a-table">
+          <thead><tr>
+            <th>#</th><th>Name</th><th>Brand</th>
+            <th>Category</th><th>Subcategory</th>
+            <th>Price</th><th>MRP</th><th>Discount</th>
+            <th>Rating</th><th>Reviews</th><th>Popularity</th>
+          </tr></thead>
+          <tbody id="prod-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ML ENGINE ── -->
+  <div id="tab-ml" class="atab" style="display:none">
+    <div class="a-page-title">🤖 ML Engine</div>
+
+    <div class="a-two-col">
+      <div class="a-card">
+        <div class="a-card-title">🧠 Training Status</div>
+        <div id="ml-stats"></div>
+        <button class="btn-primary mt-12" onclick="retrain()" id="retrain-btn">
+          🔄 Retrain Models Now
+        </button>
+        <p class="a-hint mt-8">Retrains all 3 models: TF-IDF, Collaborative Filtering, Interest Score</p>
+      </div>
+
+      <div class="a-card">
+        <div class="a-card-title">⚙️ Algorithm Weights</div>
+        <div class="weight-grid" id="weight-grid"></div>
+        <div class="a-card-title mt-16">Interest Detection Threshold</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+          <input type="range" id="thresh-slider" min="1" max="10" value="3"
+                 oninput="document.getElementById('thresh-val').textContent=this.value"
+                 style="flex:1"/>
+          <span class="thresh-badge" id="thresh-val">3</span>
+          <button class="btn-apply" onclick="saveThreshold()">Save</button>
+        </div>
+        <p class="a-hint mt-6">Views in a category before it auto-adds to user interests</p>
+      </div>
+    </div>
+
+    <div class="a-card mt-16">
+      <div class="a-card-title">📊 Algorithm Mix (Hybrid Recommendation)</div>
+      <div class="algo-mix-row">
+        <div class="algo-slice" style="background:#2874f0;flex:4">
+          <span>Collaborative Filtering</span><strong>40%</strong>
+        </div>
+        <div class="algo-slice" style="background:#388e3c;flex:3">
+          <span>Content-Based (TF-IDF)</span><strong>30%</strong>
+        </div>
+        <div class="algo-slice" style="background:#f39c12;flex:3">
+          <span>Interest-Based</span><strong>30%</strong>
+        </div>
+      </div>
+      <div class="algo-detail">
+        <div class="algo-info-card">
+          <div class="algo-icon">🤝</div>
+          <div><strong>Collaborative Filtering</strong>
+            <p>Finds users with similar interaction patterns. Uses pre-trained user-item matrix + cosine similarity.</p></div>
+        </div>
+        <div class="algo-info-card">
+          <div class="algo-icon">📝</div>
+          <div><strong>Content-Based (TF-IDF)</strong>
+            <p>Finds products similar to what you viewed/carted. Uses TF-IDF vectors with precomputed top-20 similarities.</p></div>
+        </div>
+        <div class="algo-info-card">
+          <div class="algo-icon">❤️</div>
+          <div><strong>Interest-Based</strong>
+            <p>Uses weighted interaction scores per category. Combines trained model + live session activity.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SETTINGS ── -->
+  <div id="tab-settings" class="atab" style="display:none">
+    <div class="a-page-title">⚙️ Settings</div>
+
+    <div class="a-two-col">
+      <div class="a-card">
+        <div class="a-card-title">🗑️ Bulk User Data Reset</div>
+        <div class="setting-rows">
+          <div class="setting-row">
+            <div><div class="s-label">Reset All View Histories</div><div class="s-desc">Clears browsing data for all users</div></div>
+            <button class="btn-warn" onclick="bulkReset('history')">Reset</button>
+          </div>
+          <div class="setting-row">
+            <div><div class="s-label">Reset All Carts</div><div class="s-desc">Empty everyone's cart</div></div>
+            <button class="btn-warn" onclick="bulkReset('cart')">Reset</button>
+          </div>
+          <div class="setting-row">
+            <div><div class="s-label">Reset All Interests</div><div class="s-desc">Remove auto-detected interests</div></div>
+            <button class="btn-warn" onclick="bulkReset('interests')">Reset</button>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div class="s-label">Full Reset &amp; Set to Default</div>
+              <div class="s-desc"><strong>Full Reset</strong> — clears everything (viewed, cart, purchases, interests, searches)<br/>
+              <strong>Set to Default</strong> — clears activity but restores original interests for each user</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+              <button class="btn-danger" onclick="bulkReset('all')">🗑️ Full Reset All</button>
+              <button class="btn-default" onclick="bulkSetDefault()">↩️ Set to Default</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="a-card">
+        <div class="a-card-title">ℹ️ System Info</div>
+        <div id="sys-info"></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+<script src="/static/js/main.js"></script>
+<script src="/static/js/admin.js"></script>
+</body>
+</html>

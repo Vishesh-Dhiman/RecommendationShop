@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="product-page">
+
+<nav id="breadcrumb" class="breadcrumb"></nav>
+
+<div id="prod-loading" class="det-skeleton">
+  <div class="skel det-skel-img skel"></div>
+  <div class="det-skel-right">
+    <div class="skel-line skel w60" style="height:18px;margin-bottom:10px"></div>
+    <div class="skel-line skel w90" style="height:28px;margin-bottom:14px"></div>
+    <div class="skel-line skel w40" style="height:18px;margin-bottom:20px"></div>
+    <div class="skel-line skel w70" style="height:80px;margin-bottom:16px"></div>
+    <div class="skel-line skel w50" style="height:46px"></div>
+  </div>
+</div>
+
+<div id="prod-detail" class="det-grid" style="display:none">
+  <div class="det-img-col">
+    <div id="det-img" class="det-img">
+      <div class="det-img-content">
+        <div id="det-subcat" class="det-img-subcat"></div>
+        <div id="det-brand-wm" class="det-img-brand"></div>
+      </div>
+      <div id="det-disc" class="det-disc-badge" style="display:none"></div>
+    </div>
+    <div id="det-tags" class="det-tags"></div>
+  </div>
+  <div class="det-info">
+    <div id="det-brand" class="det-brand-label"></div>
+    <h1 id="det-title" class="det-title"></h1>
+    <div class="det-rating-row">
+      <span id="det-rpill" class="det-rpill"></span>
+      <span id="det-rcount" class="det-rcount"></span>
+      <span class="det-verified">✓ Verified</span>
+    </div>
+    <div class="det-price-box">
+      <div class="det-price-row">
+        <span id="det-price" class="det-price"></span>
+        <span id="det-mrp"   class="det-mrp"  style="display:none"></span>
+        <span id="det-save"  class="det-save" style="display:none"></span>
+      </div>
+      <div id="det-save-note" class="det-save-note" style="display:none"></div>
+      <div class="det-offer">🏦 5% cashback on ShopDesi Card &nbsp;·&nbsp; No cost EMI</div>
+    </div>
+    <table id="det-meta" class="det-meta-table"></table>
+    <div class="det-actions">
+      <button id="det-cart-btn" class="det-cart-btn" onclick="detToggleCart()">🛒 Add to Cart</button>
+      <a href="/cart" class="det-buy-btn">⚡ Buy Now</a>
+    </div>
+    <div class="det-about">
+      <h4>About this product</h4>
+      <p id="det-desc"></p>
+    </div>
+  </div>
+</div>
+
+<!-- Info: why these similar products -->
+<div id="s-similar"  style="display:none"></div>
+<div id="s-cat-more" style="display:none"></div>
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const _pid = parseInt(location.pathname.split('/').pop());
+
+window._pageInit = async function() {
+  await loadProduct();
+};
+
+async function loadProduct() {
+  try {
+    const r = await fetch(`/api/product/${_pid}`);
+    const d = await r.json();
+    if (d.error) { location.href='/'; return; }
+    const p = d.product;
+    S.cartIds = d.cart_ids || [];
+    updateCartBadge(S.cartIds.length);
+    document.getElementById('pg-title').textContent = p.name + ' — ShopDesi';
+
+    // Breadcrumb
+    document.getElementById('breadcrumb').innerHTML =
+      `<a href="/">Home</a> › <a href="/?category=${enc(p.category)}">${p.category}</a> ›
+       <a href="/?category=${enc(p.category)}&subcategory=${enc(p.subcategory)}">${p.subcategory}</a> ›
+       <span>${p.name.substring(0,50)}${p.name.length>50?'…':''}</span>`;
+
+    // Image
+    const imgEl = document.getElementById('det-img');
+    imgEl.style.background = p.color_hex;
+    document.getElementById('det-subcat').textContent = p.subcategory;
+    document.getElementById('det-brand-wm').textContent = p.brand;
+    if (p.discount>0) {
+      const db = document.getElementById('det-disc');
+      db.textContent = p.discount+'% OFF'; db.style.display='';
+    }
+    document.getElementById('det-tags').innerHTML =
+      p.tags.map(t=>`<span class="dtag">${t}</span>`).join('');
+
+    // Info
+    document.getElementById('det-brand').textContent = p.brand;
+    document.getElementById('det-title').textContent = p.name;
+    const rp = document.getElementById('det-rpill');
+    rp.textContent = p.rating+' ★';
+    rp.style.background = p.rating>=4.3?'#388e3c':p.rating>=3.8?'#ff9800':'#e53935';
+    document.getElementById('det-rcount').textContent = fmt(p.reviews)+' ratings';
+    document.getElementById('det-price').textContent = '₹'+fmt(p.price);
+    if (p.mrp > p.price) {
+      const mrp=document.getElementById('det-mrp'), sv=document.getElementById('det-save');
+      mrp.textContent='M.R.P: ₹'+fmt(p.mrp); mrp.style.display='';
+      sv.textContent=p.discount+'% off'; sv.style.display='';
+      const sn=document.getElementById('det-save-note');
+      sn.textContent='You save ₹'+fmt(p.mrp-p.price); sn.style.display='';
+    }
+    document.getElementById('det-meta').innerHTML = `
+      <tr><td>Category</td><td>${p.category}</td></tr>
+      <tr><td>Subcategory</td><td>${p.subcategory}</td></tr>
+      <tr><td>Brand</td><td><strong>${p.brand}</strong></td></tr>
+      <tr><td>Availability</td><td><span style="color:#388e3c;font-weight:700">✓ In Stock</span></td></tr>
+      <tr><td>Popularity</td><td>${fmt(p.popularity)}+ sold</td></tr>
+      <tr><td>Product ID</td><td>#SD${String(p.id).padStart(4,'0')}</td></tr>`;
+    document.getElementById('det-desc').textContent = p.description +
+      ` Rated ${p.rating}/5 by ${fmt(p.reviews)} verified customers on ShopDesi.`;
+    updateDetCartBtn(d.in_cart);
+
+    // Show
+    document.getElementById('prod-loading').style.display = 'none';
+    document.getElementById('prod-detail').style.display = '';
+
+    // Category nav
+    const cr = await fetch('/api/products?page=1');
+    const cd = await cr.json();
+    renderCatBar(cd.categories||{}, p.category);
+
+    // Strips
+    renderStrip('s-similar', d.similar, S.cartIds,
+      '🔁 Similar Products', 'TF-IDF',
+      `Content-Based Filtering: TF-IDF cosine similarity computed at training time. Top similar products to "${p.name.substring(0,30)}…" based on name, brand, category and tags.`);
+
+    renderStrip('s-cat-more', d.cat_rec, S.cartIds,
+      '🏷️ More from '+p.category, 'Category',
+      `Top products from the ${p.category} category, sorted by popularity score.`);
+
+  } catch(e) { console.error('loadProduct error', e); }
+}
+
+function updateDetCartBtn(inCart) {
+  const btn = document.getElementById('det-cart-btn');
+  if (!btn) return;
+  btn.textContent = inCart ? '✓ Added to Cart' : '🛒 Add to Cart';
+  btn.className = 'det-cart-btn' + (inCart ? ' in-cart' : '');
+}
+
+async function detToggleCart() {
+  const btn = document.getElementById('det-cart-btn');
+  btn.disabled = true;
+  try {
+    const r = await fetch('/api/cart/toggle', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({product_id: _pid})
+    });
+    const d = await r.json();
+    S.cartIds = d.cart_ids || [];
+    updateCartBadge(d.cart_count);
+    updateDetCartBtn(d.action === 'added');
+    toast(d.action==='added'?'🛒 Added to cart!':'Removed from cart', d.action==='added'?'success':'info');
+  } finally { btn.disabled = false; }
+}
+</script>
+{% endblock %}

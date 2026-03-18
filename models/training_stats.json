@@ -1,0 +1,22 @@
+{
+  "trained_at": "2026-03-17 20:31:44",
+  "elapsed_sec": 0.15,
+  "product_count": 180,
+  "user_count": 9,
+  "vocab_size": 781,
+  "cf_nonzero": 43,
+  "cf_sparsity": 0.9734567901234568,
+  "models": [
+    "tfidf_model",
+    "cf_model",
+    "interest_model"
+  ],
+  "weights": {
+    "view": 1.0,
+    "time": 0.05,
+    "cart": 3.0,
+    "purchase": 5.0,
+    "search": 0.5
+  },
+  "interest_threshold": 3
+}

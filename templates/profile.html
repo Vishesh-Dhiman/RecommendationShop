@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="profile-page">
+
+  <div id="p-hero" class="p-hero" style="display:none">
+    <div id="p-av" class="p-avatar"></div>
+    <div class="p-hero-info">
+      <div id="p-name" class="p-name"></div>
+      <div id="p-uname" class="p-uname"></div>
+      <div id="p-ints-row" class="p-ints-row"></div>
+    </div>
+  </div>
+
+  <div id="p-stats" class="p-stats-row" style="display:none">
+    <div class="p-stat"><div id="ps-v" class="p-stat-n">0</div><div class="p-stat-l">Viewed</div></div>
+    <div class="p-stat"><div id="ps-c" class="p-stat-n">0</div><div class="p-stat-l">In Cart</div></div>
+    <div class="p-stat"><div id="ps-p" class="p-stat-n">0</div><div class="p-stat-l">Purchases</div></div>
+    <div class="p-stat"><div id="ps-s" class="p-stat-n">0</div><div class="p-stat-l">Searches</div></div>
+  </div>
+
+  <!-- Clear bar -->
+  <div id="p-clear-bar" class="p-clear-bar" style="display:none">
+    <span class="p-clear-label">🗑️ Clear:</span>
+    <button onclick="clearField('viewed')">Viewed</button>
+    <button onclick="clearField('cart')">Cart</button>
+    <button onclick="clearField('searched')">Searches</button>
+    <button onclick="clearField('interests')">Interests</button>
+    <button onclick="clearField('category_views')">Category Data</button>
+    <button class="danger" onclick="clearField('all')">Clear All</button>
+  </div>
+
+  <!-- Interest Manager -->
+  <div id="p-int-manager" class="profile-section" style="display:none">
+    <div class="ps-header">
+      <h3>❤️ Interest Manager</h3>
+      <span class="ps-hint">Click to add/remove · Auto-detects from browsing</span>
+      <span class="ps-info-btn" onclick="toggleInfo('int-info')">ℹ️</span>
+    </div>
+    <div class="info-popup" id="int-info" style="display:none">
+      <span>Interests are auto-detected: browse <strong id="int-thresh-text">3</strong> products in any category → it gets added automatically. Interest Score = views×1 + cart×3 + purchases×5. Higher score = more recs from that category.</span>
+      <button onclick="document.getElementById('int-info').style.display='none'">✕</button>
+    </div>
+    <div id="int-chips" class="int-chips"></div>
+  </div>
+
+  <!-- Category activity -->
+  <div id="p-cat-activity" class="profile-section" style="display:none">
+    <div class="ps-header">
+      <h3>📊 Category Activity</h3>
+      <span class="ps-hint">Views per category · <span id="cat-thresh-lbl">3</span> views → interest added</span>
+    </div>
+    <div id="cat-bars"></div>
+  </div>
+
+  <!-- Interest score bars -->
+  <div id="p-score-section" class="profile-section" style="display:none">
+    <div class="ps-header">
+      <h3>📈 Your Interest Scores</h3>
+      <span class="ps-hint">Used by ML to weight recommendations</span>
+      <span class="ps-info-btn" onclick="toggleInfo('score-info')">ℹ️</span>
+    </div>
+    <div class="info-popup" id="score-info" style="display:none">
+      <span>Score = (views in category × 1) + (cart additions × 3) + (purchases × 5). Higher score = that category dominates your "For You" recommendations.</span>
+      <button onclick="document.getElementById('score-info').style.display='none'">✕</button>
+    </div>
+    <div id="score-bars"></div>
+  </div>
+
+  <div id="s-viewed-hist"  style="display:none"></div>
+  <div id="s-purchases"    style="display:none"></div>
+
+  <div id="p-search-hist" class="profile-section" style="display:none">
+    <div class="ps-header"><h3>🔍 Search History</h3></div>
+    <div id="search-pills" class="search-pills-wrap"></div>
+  </div>
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let _pu = null;
+const THRESH = 3;
+
+window._pageInit = async function() {
+  const r = await fetch('/api/me');
+  _pu = await r.json();
+  if (_pu.error) { location.href='/login'; return; }
+  renderProfile(_pu);
+  loadProfileStrips(_pu);
+  // Category nav
+  const pr = await fetch('/api/products?page=1');
+  const pd = await pr.json();
+  renderCatBar(pd.categories||{});
+  S.categories = pd.categories||{};
+};
+
+function renderProfile(u) {
+  document.getElementById('p-hero').style.display    = '';
+  document.getElementById('p-stats').style.display   = '';
+  document.getElementById('p-clear-bar').style.display = 'flex';
+  document.getElementById('p-int-manager').style.display = '';
+
+  document.getElementById('p-av').textContent    = u.avatar;
+  document.getElementById('p-name').textContent  = u.name;
+  document.getElementById('p-uname').textContent = '@' + u.username;
+  document.getElementById('ps-v').textContent = (u.viewed||[]).length;
+  document.getElementById('ps-c').textContent = (u.cart||[]).length;
+  document.getElementById('ps-p').textContent = (u.purchases||[]).length;
+  document.getElementById('ps-s').textContent = (u.searched||[]).length;
+
+  // Interest tags in hero
+  document.getElementById('p-ints-row').innerHTML =
+    (u.interests||[]).length
+      ? (u.interests).map(i=>`<span class="p-int-tag">${i}</span>`).join('')
+      : '<span style="opacity:.7;font-size:12px">Browse products to auto-detect interests</span>';
+
+  // Render interest chips
+  fetch('/api/products?page=1').then(r=>r.json()).then(d=>{
+    const cats = Object.keys(d.categories||{});
+    document.getElementById('int-chips').innerHTML = cats.map(cat => {
+      const active = (u.interests||[]).includes(cat);
+      const cv = (u.category_views||{})[cat]||0;
+      return `<div class="int-chip ${active?'active':''}" onclick="toggleInterest('${cat}',this)">
+        <span>${cat}</span>
+        ${active
+          ? '<span class="int-badge active-badge">✓ Active</span>'
+          : cv>0 ? `<span class="int-badge">${cv}/${THRESH} views</span>` : ''}
+      </div>`;
+    }).join('');
+  });
+
+  // Category activity bars
+  const cv = u.category_views||{};
+  const cvEntries = Object.entries(cv).sort((a,b)=>b[1]-a[1]);
+  if (cvEntries.length) {
+    document.getElementById('p-cat-activity').style.display='';
+    const maxCV = cvEntries[0][1]||1;
+    document.getElementById('cat-bars').innerHTML = cvEntries.map(([cat,cnt])=>{
+      const pct = Math.round(cnt/THRESH*100);
+      const done = cnt >= THRESH;
+      return `<div class="score-bar-row">
+        <div class="score-bar-label">${cat}</div>
+        <div class="score-bar-track">
+          <div class="score-bar-fill" style="width:${Math.min(100,pct)}%;background:${done?'#388e3c':'#2874f0'}">
+            ${cnt} view${cnt!==1?'s':''}
+          </div>
+        </div>
+        <div class="score-bar-extra">${done?'<span style="color:#388e3c;font-weight:700">✓ Interest</span>':''}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Interest scores from recs API
+  fetch('/api/recommendations').then(r=>r.json()).then(d=>{
+    const scores = d.interest_scores||{};
+    const entries = Object.entries(scores).sort((a,b)=>b[1]-a[1]).filter(([,v])=>v>0);
+    if (entries.length) {
+      document.getElementById('p-score-section').style.display='';
+      const maxS = entries[0][1]||1;
+      document.getElementById('score-bars').innerHTML = entries.map(([cat,score])=>{
+        const pct = Math.round(score/maxS*100);
+        return `<div class="score-bar-row">
+          <div class="score-bar-label">${cat}</div>
+          <div class="score-bar-track">
+            <div class="score-bar-fill" style="width:${pct}%;background:#9c27b0">${score.toFixed(1)}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    S.cartIds = d.cart_ids||[];
+    updateCartBadge(S.cartIds.length);
+  });
+
+  // Search history
+  if ((u.searched||[]).length) {
+    document.getElementById('p-search-hist').style.display='';
+    document.getElementById('search-pills').innerHTML =
+      [...u.searched].reverse().map(s=>
+        `<a href="/search?q=${enc(s)}" class="s-pill">${s}</a>`).join('');
+  }
+}
+
+async function loadProfileStrips(u) {
+  if ((u.viewed||[]).length) {
+    const r = await fetch('/api/products/bulk',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:[...(u.viewed||[])].reverse().slice(0,8)})});
+    const d = await r.json();
+    renderStrip('s-viewed-hist', d.products, d.cart_ids||[], '👁️ Recently Viewed', 'History',
+      'Products you recently browsed. Used as seeds for "Because You Viewed" recommendations.');
+  }
+  if ((u.purchases||[]).length) {
+    const r = await fetch('/api/products/bulk',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:u.purchases||[]})});
+    const d = await r.json();
+    renderStrip('s-purchases', d.products, d.cart_ids||[], '✅ Purchase History', 'Bought',
+      'Your past purchases. Heavily weighted in Collaborative Filtering model (purchase weight = 5).');
+  }
+}
+
+async function toggleInterest(cat, el) {
+  const isActive = el.classList.contains('active');
+  const r = await fetch('/api/user/interests',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({action:isActive?'remove':'add',interest:cat})});
+  const d = await r.json();
+  if (d.ok) {
+    _pu.interests = d.interests;
+    renderProfile(_pu);
+    toast((isActive?'Removed: ':'Added: ')+cat+' interest', isActive?'info':'success');
+  }
+}
+
+async function clearField(field) {
+  const labels = {viewed:'view history',cart:'cart',searched:'searches',
+    interests:'interests',category_views:'category data',all:'everything'};
+  if (!confirm('Clear your '+labels[field]+'?')) return;
+  const r = await fetch('/api/user/clear',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({field})});
+  const d = await r.json();
+  if (d.ok) {
+    _pu = d.user; renderProfile(d.user);
+    if (field==='viewed'||field==='all') document.getElementById('s-viewed-hist').style.display='none';
+    if (field==='cart'||field==='all') { updateCartBadge(0); S.cartIds=[]; }
+    toast('Cleared: '+labels[field],'info');
+  }
+}
+
+function toggleInfo(id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = el.style.display==='none'?'flex':'none';
+}
+</script>
+{% endblock %}

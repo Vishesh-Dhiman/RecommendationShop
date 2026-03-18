@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="search-page">
+  <div class="search-header-box">
+    <form onsubmit="doSearch(event)" class="search-form-big">
+      <input id="sq" type="text" placeholder="Search products, brands, categories…" autofocus/>
+      <button type="submit">🔍 Search</button>
+    </form>
+  </div>
+  <div id="search-meta" class="search-meta" style="display:none"></div>
+  <div id="search-results"></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+window._pageInit = function() {
+  const q = new URLSearchParams(location.search).get('q')||'';
+  document.getElementById('sq').value = q;
+  if (q) runSearch(q);
+};
+function doSearch(e) {
+  e.preventDefault();
+  const q = document.getElementById('sq').value.trim();
+  if (!q) return;
+  history.pushState({}, '', '/search?q=' + enc(q));
+  document.getElementById('nav-q').value = q;
+  runSearch(q);
+}
+async function runSearch(q) {
+  document.getElementById('search-results').innerHTML = skeleton(12);
+  document.getElementById('search-meta').style.display = 'none';
+  try {
+    const r = await fetch('/api/search?q=' + enc(q));
+    const d = await r.json();
+    S.cartIds = d.cart_ids || [];
+    updateCartBadge(S.cartIds.length);
+    const meta = document.getElementById('search-meta');
+    meta.style.display = 'flex';
+    meta.innerHTML = `
+      <span>${d.results.length} results for <strong>"${d.query}"</strong></span>
+      <span class="search-hint">ℹ️ TF-IDF relevance + interest boost</span>`;
+    const grid = document.getElementById('search-results');
+    if (!d.results.length) {
+      grid.innerHTML = `<div class="empty-grid"><div style="font-size:40px">🔍</div>
+        <h4>No results for "${q}"</h4>
+        <p>Try different keywords or <a href="/">browse all</a></p></div>`;
+    } else {
+      grid.innerHTML = `<div class="prod-grid">${d.results.map(p=>card(p,S.cartIds)).join('')}</div>`;
+    }
+  } catch(e) { console.error(e); }
+}
+</script>
+{% endblock %}

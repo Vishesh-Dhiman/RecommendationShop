@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Hero -->
+<div class="hero" id="hero" style="display:none">
+  <div class="hero-left">
+    <h2>Hey <span id="h-name" class="hero-name">there</span>! 👋</h2>
+    <p>Showing picks based on your interest in <strong id="h-ints">—</strong></p>
+    <div id="h-tags" class="hero-tags"></div>
+  </div>
+  <div class="hero-right">
+    <div id="h-count" class="hero-count">—</div>
+    <div class="hero-count-lbl">Products</div>
+  </div>
+</div>
+
+<!-- Interest notification -->
+<div class="interest-notif" id="int-notif" style="display:none">
+  <span id="int-notif-text">🎯 New interest added!</span>
+  <button onclick="document.getElementById('int-notif').style.display='none'">✕</button>
+</div>
+
+<!-- Rec strips (hidden until data loads) -->
+<div id="s-foryou"    style="display:none"></div>
+<div id="s-viewed"    style="display:none"></div>
+<div id="s-cart"      style="display:none"></div>
+<div id="s-interest"  style="display:none"></div>
+<div id="s-trending"  style="display:none"></div>
+
+<!-- Browse section -->
+<div class="browse-box">
+  <div class="browse-top">
+    <div class="browse-title-wrap">
+      <h3 id="browse-title">All Products</h3>
+      <span id="browse-count" class="browse-count"></span>
+    </div>
+    <div class="filter-bar">
+      <select id="f-sort" class="f-sel" onchange="applyF()">
+        <option value="popularity">🔥 Popular</option>
+        <option value="rating">⭐ Top Rated</option>
+        <option value="price_low">₹ Low → High</option>
+        <option value="price_high">₹ High → Low</option>
+        <option value="discount">🏷️ Discount</option>
+        <option value="newest">🆕 Newest</option>
+      </select>
+      <div class="price-inputs">
+        <input id="f-min" class="f-num" type="number" placeholder="Min ₹" min="0"/>
+        <span>–</span>
+        <input id="f-max" class="f-num" type="number" placeholder="Max ₹" min="0"/>
+      </div>
+      <select id="f-rating" class="f-sel" onchange="applyF()">
+        <option value="">Any Rating</option>
+        <option value="4.5">4.5+ ⭐</option>
+        <option value="4.0">4.0+ ⭐</option>
+        <option value="3.5">3.5+ ⭐</option>
+      </select>
+      <button class="f-apply-btn" onclick="applyF()">Apply</button>
+      <button class="f-reset-btn" onclick="resetF()">Reset</button>
+    </div>
+  </div>
+  <div id="subcat-pills" class="pills-row"></div>
+  <div id="prod-grid" class="prod-grid"></div>
+  <div id="prod-pagination" class="pagination"></div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+const FS = {
+  category: new URLSearchParams(location.search).get('category')||'',
+  subcategory: '', sort:'popularity', minPrice:'', maxPrice:'', minRating:'', page:1
+};
+let _prevInterests = [];
+
+window._pageInit = function() {
+  loadRecs();
+  loadProds();
+  ['f-min','f-max'].forEach(id => {
+    document.getElementById(id)?.addEventListener('keydown', e => {
+      if(e.key==='Enter') applyF();
+    });
+  });
+  // Poll for interest changes every 10s
+  setInterval(pollInterests, 10000);
+};
+
+// ── Load recommendations ───────────────────────────────────────────
+async function loadRecs() {
+  try {
+    const r = await fetch('/api/recommendations');
+    const d = await r.json();
+    if (d.error) return;
+    S.cartIds = d.cart_ids || [];
+    _prevInterests = (d.user?.interests || []).slice();
+
+    // Hero
+    const u = d.user;
+    document.getElementById('hero').style.display = '';
+    document.getElementById('h-name').textContent = u.name.split(' ')[0];
+    document.getElementById('h-ints').textContent = (u.interests||[]).join(', ') || 'everything';
+    document.getElementById('h-tags').innerHTML = (u.interests||[]).map(i =>
+      `<a href="/?category=${enc(i)}" class="hero-tag">${i}</a>`).join('');
+
+    // Category bar
+    renderCatBar(d.categories || {}, FS.category);
+    S.categories = d.categories || {};
+
+    // Recommendation strips with ℹ️ info text
+    renderStrip('s-foryou', d.for_you, S.cartIds,
+      '🎯 Recommended For You', 'ML',
+      'Hybrid model: 40% Collaborative Filtering + 30% TF-IDF Content-Based + 30% Interest-Based. Personalised using your browsing & cart history.');
+
+    renderStrip('s-viewed', d.viewed_based, S.cartIds,
+      '👁️ Because You Viewed', 'Content-Based',
+      'Content-Based Filtering using TF-IDF cosine similarity. Finds products similar to what you recently browsed.');
+
+    renderStrip('s-cart', d.cart_based, S.cartIds,
+      '🛒 Complete Your Cart', 'Cart-Based',
+      'TF-IDF similarity on your cart items. Suggests products that go well with what you\'re buying.');
+
+    renderStrip('s-interest', d.interest_based, S.cartIds,
+      '❤️ Based On Your Interests', 'Interest-Based',
+      `Interest Score Formula: views×1 + cart×3 + purchases×5. Top categories by score: ${Object.entries(d.interest_scores||{}).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([c,s])=>c+' ('+s+')').join(', ')}`);
+
+    renderStrip('s-trending', d.trending, S.cartIds,
+      '🔥 Trending Now', 'Popular',
+      'Top products by popularity score across all categories. No personalisation — same for all users.');
+
+  } catch(e) { console.error('loadRecs error', e); }
+}
+
+// ── Load products ──────────────────────────────────────────────────
+async function loadProds() {
+  document.getElementById('prod-grid').innerHTML = skeleton(12);
+  const p = new URLSearchParams();
+  if (FS.category)    p.set('category', FS.category);
+  if (FS.subcategory) p.set('subcategory', FS.subcategory);
+  p.set('sort', FS.sort); p.set('page', FS.page);
+  if (FS.minPrice)  p.set('min_price', FS.minPrice);
+  if (FS.maxPrice)  p.set('max_price', FS.maxPrice);
+  if (FS.minRating) p.set('min_rating', FS.minRating);
+
+  try {
+    const r = await fetch('/api/products?' + p);
+    const d = await r.json();
+    S.cartIds = d.cart_ids || [];
+    updateCartBadge(S.cartIds.length);
+
+    document.getElementById('browse-title').textContent =
+      FS.subcategory || FS.category || 'All Products';
+    document.getElementById('browse-count').textContent =
+      d.total.toLocaleString('en-IN') + ' products';
+    document.getElementById('h-count').textContent =
+      d.total.toLocaleString('en-IN');
+
+    // Subcat pills
+    const pillsEl = document.getElementById('subcat-pills');
+    if (FS.category && d.categories?.[FS.category]) {
+      const subs = d.categories[FS.category];
+      pillsEl.innerHTML =
+        `<button class="pill ${!FS.subcategory?'active':''}" onclick="setSub('')">All</button>` +
+        subs.map(s => `<button class="pill ${FS.subcategory===s?'active':''}" onclick="setSub('${s}')">${s}</button>`).join('');
+    } else pillsEl.innerHTML = '';
+
+    renderGrid('prod-grid', d.products, d.cart_ids);
+    renderPagination('prod-pagination', d.page, d.total_pages, 'goPage');
+  } catch(e) { console.error('loadProds error', e); }
+}
+
+window.goPage = function(p) {
+  FS.page = p;
+  loadProds();
+  window.scrollTo({top: document.getElementById('prod-grid').offsetTop - 80, behavior:'smooth'});
+};
+
+function applyF() {
+  FS.sort      = document.getElementById('f-sort').value;
+  FS.minPrice  = document.getElementById('f-min').value;
+  FS.maxPrice  = document.getElementById('f-max').value;
+  FS.minRating = document.getElementById('f-rating').value;
+  FS.page = 1; loadProds();
+}
+function resetF() {
+  FS.sort='popularity'; FS.minPrice=''; FS.maxPrice=''; FS.minRating=''; FS.page=1;
+  ['f-sort','f-rating'].forEach(id => document.getElementById(id).value = id==='f-sort'?'popularity':'');
+  ['f-min','f-max'].forEach(id => document.getElementById(id).value = '');
+  loadProds();
+}
+function setSub(s) { FS.subcategory=s; FS.page=1; loadProds(); }
+
+// ── Poll interest changes ──────────────────────────────────────────
+async function pollInterests() {
+  try {
+    const r = await fetch('/api/me');
+    const u = await r.json();
+    if (u.error) return;
+    const newOnes = (u.interests||[]).filter(i => !_prevInterests.includes(i));
+    if (newOnes.length) {
+      document.getElementById('int-notif-text').innerHTML =
+        `🎯 New interest detected: <strong>${newOnes.join(', ')}</strong> — added based on your browsing!`;
+      document.getElementById('int-notif').style.display = 'flex';
+      _prevInterests = u.interests.slice();
+      loadRecs(); // reload recs with new interests
+    }
+    S.user = u;
+    document.getElementById('h-ints').textContent = (u.interests||[]).join(', ') || 'everything';
+  } catch(e) {}
+}
+</script>
+{% endblock %}

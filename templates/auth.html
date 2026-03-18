@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title id="auth-title">Login — ShopDesi</title>
+<link rel="stylesheet" href="/static/css/style.css"/>
+<link rel="stylesheet" href="/static/css/auth.css"/>
+</head>
+<body class="auth-body">
+
+<div class="auth-wrapper">
+
+  <!-- Left panel -->
+  <div class="auth-left">
+    <div class="auth-brand">🛒 ShopDesi</div>
+    <h2 class="auth-tagline">India's Smartest<br/>Shopping Experience</h2>
+    <p class="auth-desc">Personalised recommendations powered by Machine Learning — showing you exactly what you'll love.</p>
+    <div class="auth-features">
+      <div class="af"><span>🎯</span> ML-Powered Recommendations</div>
+      <div class="af"><span>❤️</span> Interest-Based Personalisation</div>
+      <div class="af"><span>🔥</span> 180+ Indian Products</div>
+      <div class="af"><span>🤖</span> TF-IDF + Collaborative Filtering</div>
+    </div>
+  </div>
+
+  <!-- Right panel — forms switch via JS -->
+  <div class="auth-right">
+
+    <!-- LOGIN FORM -->
+    <div id="login-panel" class="auth-card" {% if mode=='signup' %}style="display:none"{% endif %}>
+      <div class="ac-head">
+        <div class="ac-logo">🛒</div>
+        <h3>Welcome Back!</h3>
+        <p>Login to your ShopDesi account</p>
+      </div>
+
+      <div id="login-error" class="auth-error" style="display:none"></div>
+      {% if error and mode=='login' %}
+      <div class="auth-error">⚠ {{ error }}</div>
+      {% endif %}
+
+      <form id="login-form" onsubmit="doLogin(event)">
+        <div class="fg">
+          <label>Username</label>
+          <input class="fi" id="l-username" name="username" placeholder="Enter your username" required autocomplete="username"/>
+        </div>
+        <div class="fg">
+          <label>Password</label>
+          <div class="fi-wrap">
+            <input class="fi" id="l-password" name="password" type="password" placeholder="Enter your password" required autocomplete="current-password"/>
+            <button type="button" class="fi-eye" onclick="togglePwd('l-password',this)">👁</button>
+          </div>
+        </div>
+        <button type="submit" class="auth-btn" id="login-btn">Login →</button>
+      </form>
+
+      <div class="auth-switch">
+        Don't have an account? <a href="#" onclick="showSignup()">Sign Up</a>
+      </div>
+
+      <!-- Demo users -->
+      <div class="demo-block">
+        <div class="demo-label">🧪 Demo Users — click to fill</div>
+        <div class="demo-grid">
+          <button class="demo-chip" onclick="fillLogin('rahul_tech','rahul123')">📱 Tech</button>
+          <button class="demo-chip" onclick="fillLogin('priya_fashion','priya123')">👗 Fashion</button>
+          <button class="demo-chip" onclick="fillLogin('amit_fitness','amit123')">💪 Fitness</button>
+          <button class="demo-chip" onclick="fillLogin('sneha_home','sneha123')">🏠 Home</button>
+          <button class="demo-chip" onclick="fillLogin('vikram_gamer','vikram123')">🎮 Gamer</button>
+          <button class="demo-chip" onclick="fillLogin('ananya_books','ananya123')">📚 Books</button>
+          <button class="demo-chip" onclick="fillLogin('rohit_budget','rohit123')">💰 Budget</button>
+          <button class="demo-chip" onclick="fillLogin('Navya_beauty','navya123')">✨ Beauty</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIGNUP FORM -->
+    <div id="signup-panel" class="auth-card" {% if mode=='login' %}style="display:none"{% endif %}>
+      <div class="ac-head">
+        <div class="ac-logo">🛒</div>
+        <h3>Create Account</h3>
+        <p>Join ShopDesi — get personalised picks from day one</p>
+      </div>
+
+      <div id="signup-error" class="auth-error" style="display:none"></div>
+      <div id="signup-success" class="auth-success" style="display:none"></div>
+
+      <form id="signup-form" onsubmit="doSignup(event)">
+        <div class="fg-row">
+          <div class="fg">
+            <label>Full Name <span class="req">*</span></label>
+            <input class="fi" id="s-name" placeholder="e.g. Rahul Sharma" required/>
+          </div>
+          <div class="fg">
+            <label>Username <span class="req">*</span></label>
+            <input class="fi" id="s-username" placeholder="e.g. rahul_tech" required
+                   oninput="checkUsername(this)"/>
+            <div class="fi-hint" id="uname-hint"></div>
+          </div>
+        </div>
+        <div class="fg">
+          <label>Email <span class="opt">(optional)</span></label>
+          <input class="fi" id="s-email" type="email" placeholder="your@email.com"/>
+        </div>
+        <div class="fg-row">
+          <div class="fg">
+            <label>Password <span class="req">*</span></label>
+            <div class="fi-wrap">
+              <input class="fi" id="s-password" type="password" placeholder="Min 4 characters" required/>
+              <button type="button" class="fi-eye" onclick="togglePwd('s-password',this)">👁</button>
+            </div>
+          </div>
+          <div class="fg">
+            <label>Confirm Password <span class="req">*</span></label>
+            <input class="fi" id="s-confirm" type="password" placeholder="Repeat password" required/>
+          </div>
+        </div>
+
+        <!-- Interests selector -->
+        <div class="fg">
+          <label>Your Interests <span class="req">*</span> <span class="opt">(select at least 2)</span></label>
+          <div class="int-selector" id="int-selector">
+            <div class="int-sel-chip" data-cat="Electronics"         onclick="toggleInt(this)">📱 Electronics</div>
+            <div class="int-sel-chip" data-cat="Fashion"             onclick="toggleInt(this)">👗 Fashion</div>
+            <div class="int-sel-chip" data-cat="Books"               onclick="toggleInt(this)">📚 Books</div>
+            <div class="int-sel-chip" data-cat="Home &amp; Kitchen"  onclick="toggleInt(this)">🏠 Home &amp; Kitchen</div>
+            <div class="int-sel-chip" data-cat="Sports &amp; Fitness" onclick="toggleInt(this)">💪 Sports &amp; Fitness</div>
+            <div class="int-sel-chip" data-cat="Beauty &amp; Personal Care" onclick="toggleInt(this)">✨ Beauty &amp; Personal Care</div>
+          </div>
+          <div class="int-sel-count" id="int-count">0 selected (minimum 2)</div>
+        </div>
+
+        <button type="submit" class="auth-btn" id="signup-btn">Create Account →</button>
+      </form>
+
+      <div class="auth-switch">
+        Already have an account? <a href="#" onclick="showLogin()">Login</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── Switch panels ─────────────────────────────────────────────────
+function showSignup() {
+  document.getElementById('login-panel').style.display  = 'none';
+  document.getElementById('signup-panel').style.display = '';
+  document.getElementById('auth-title').textContent = 'Sign Up — ShopDesi';
+  history.replaceState({}, '', '/signup');
+}
+function showLogin() {
+  document.getElementById('signup-panel').style.display = 'none';
+  document.getElementById('login-panel').style.display  = '';
+  document.getElementById('auth-title').textContent = 'Login — ShopDesi';
+  history.replaceState({}, '', '/login');
+}
+
+// ── Demo fill ─────────────────────────────────────────────────────
+function fillLogin(u, p) {
+  document.getElementById('l-username').value = u;
+  document.getElementById('l-password').value = p;
+  document.getElementById('l-username').focus();
+}
+
+// ── Password toggle ───────────────────────────────────────────────
+function togglePwd(id, btn) {
+  const inp = document.getElementById(id);
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+}
+
+// ── Login submit ──────────────────────────────────────────────────
+async function doLogin(e) {
+  e.preventDefault();
+  const btn  = document.getElementById('login-btn');
+  const errEl= document.getElementById('login-error');
+  const u    = document.getElementById('l-username').value.trim();
+  const p    = document.getElementById('l-password').value.trim();
+  if (!u || !p) { showErr(errEl, 'Please fill all fields.'); return; }
+  btn.textContent = 'Logging in…'; btn.disabled = true;
+  try {
+    const r = await fetch('/api/login', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({username: u, password: p})
+    });
+    const d = await r.json();
+    if (d.error) { showErr(errEl, d.error); btn.textContent='Login →'; btn.disabled=false; return; }
+    btn.textContent = '✓ Success! Redirecting…';
+    window.location.href = '/';
+  } catch(err) { showErr(errEl, 'Network error. Try again.'); btn.textContent='Login →'; btn.disabled=false; }
+}
+
+// ── Interests toggle ───────────────────────────────────────────────
+let selectedInts = [];
+function toggleInt(chip) {
+  chip.classList.toggle('selected');
+  selectedInts = [...document.querySelectorAll('.int-sel-chip.selected')].map(c => c.dataset.cat);
+  const cnt = selectedInts.length;
+  const el  = document.getElementById('int-count');
+  el.textContent = cnt + ' selected' + (cnt < 2 ? ' (minimum 2)' : ' ✓');
+  el.style.color = cnt >= 2 ? '#388e3c' : '#9e9e9e';
+}
+
+// ── Username availability check ────────────────────────────────────
+let _ucheck;
+async function checkUsername(inp) {
+  clearTimeout(_ucheck);
+  const val = inp.value.trim().toLowerCase();
+  const hint = document.getElementById('uname-hint');
+  if (val.length < 3) { hint.textContent = ''; return; }
+  _ucheck = setTimeout(async () => {
+    try {
+      const r = await fetch('/api/check-username?u=' + encodeURIComponent(val));
+      const d = await r.json();
+      hint.textContent = d.available ? '✓ Available' : '✗ Already taken';
+      hint.style.color = d.available ? '#388e3c' : '#c0392b';
+    } catch(e) {}
+  }, 400);
+}
+
+// ── Signup submit ──────────────────────────────────────────────────
+async function doSignup(e) {
+  e.preventDefault();
+  const btn     = document.getElementById('signup-btn');
+  const errEl   = document.getElementById('signup-error');
+  const succEl  = document.getElementById('signup-success');
+  errEl.style.display = 'none'; succEl.style.display = 'none';
+
+  const name    = document.getElementById('s-name').value.trim();
+  const username= document.getElementById('s-username').value.trim().toLowerCase();
+  const email   = document.getElementById('s-email').value.trim();
+  const pass    = document.getElementById('s-password').value;
+  const confirm = document.getElementById('s-confirm').value;
+
+  if (!name || !username || !pass) { showErr(errEl, 'Please fill all required fields.'); return; }
+  if (pass !== confirm)            { showErr(errEl, 'Passwords do not match.'); return; }
+  if (pass.length < 4)             { showErr(errEl, 'Password must be at least 4 characters.'); return; }
+  if (selectedInts.length < 2)    { showErr(errEl, 'Please select at least 2 interests.'); return; }
+
+  btn.textContent = 'Creating account…'; btn.disabled = true;
+  try {
+    const r = await fetch('/api/signup', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({name, username, email, password: pass, interests: selectedInts})
+    });
+    const d = await r.json();
+    if (d.error) { showErr(errEl, d.error); btn.textContent='Create Account →'; btn.disabled=false; return; }
+    succEl.innerHTML = '🎉 Account created! Welcome, <strong>' + d.user.name + '</strong>! Redirecting…';
+    succEl.style.display = '';
+    btn.textContent = '✓ Done!';
+    setTimeout(() => window.location.href = '/', 1200);
+  } catch(err) { showErr(errEl, 'Network error. Try again.'); btn.textContent='Create Account →'; btn.disabled=false; }
+}
+
+function showErr(el, msg) {
+  el.innerHTML = '⚠ ' + msg;
+  el.style.display = '';
+  el.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+</script>
+</body>
+</html>

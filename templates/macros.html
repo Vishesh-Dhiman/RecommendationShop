@@ -1,0 +1,40 @@
+{% macro card(p, cart_ids) %}
+{% set in_c = p.id in cart_ids %}
+<div class="card" onclick="goProduct({{ p.id }})">
+  <div class="card-img" style="background:{{ p.color_hex }}">
+    <div class="card-img-inner">
+      <span class="card-cat-text">{{ p.subcategory }}</span>
+      <span class="card-brand-text">{{ p.brand }}</span>
+    </div>
+    {% if p.discount > 0 %}
+    <span class="card-discount">{{ p.discount }}% off</span>
+    {% endif %}
+    <span class="card-wishlist">♡</span>
+  </div>
+  <div class="card-body">
+    <div class="card-brand">{{ p.brand }}</div>
+    <div class="card-name">{{ p.name }}</div>
+    <div class="card-rating">
+      {% if p.rating >= 4.3 %}
+        <span class="rating-pill">{{ p.rating }} ★</span>
+      {% elif p.rating >= 3.8 %}
+        <span class="rating-pill avg">{{ p.rating }} ★</span>
+      {% else %}
+        <span class="rating-pill low">{{ p.rating }} ★</span>
+      {% endif %}
+      <span class="rating-count">{{ "{:,}".format(p.reviews | int) }}</span>
+    </div>
+    <div class="card-price">
+      <span class="price">₹{{ "{:,}".format(p.price) }}</span>
+      {% if p.mrp > p.price %}
+      <span class="mrp">₹{{ "{:,}".format(p.mrp) }}</span>
+      <span class="save">{{ p.discount }}% off</span>
+      {% endif %}
+    </div>
+    <button class="card-btn {{ 'in-cart' if in_c else '' }}"
+            onclick="event.stopPropagation(); toggleCart({{ p.id }}, this)">
+      {{ '✓ Added' if in_c else '+ Add to Cart' }}
+    </button>
+  </div>
+</div>
+{% endmacro %}

@@ -1,0 +1,196 @@
+[
+  {
+    "id": "u1",
+    "username": "rahul_tech",
+    "password": "rahul123",
+    "name": "Rahul Sharma",
+    "avatar": "RS",
+    "interests": [
+      "Electronics",
+      "Books"
+    ],
+    "viewed": [],
+    "cart": [],
+    "searched": [],
+    "purchases": [],
+    "category_views": {},
+    "email": "rahul@example.com",
+    "joined": "2025-01-01"
+  },
+  {
+    "id": "u2",
+    "username": "priya_fashion",
+    "password": "priya123",
+    "name": "Priya Singh",
+    "avatar": "PS",
+    "interests": [
+      "Fashion",
+      "Beauty & Personal Care"
+    ],
+    "viewed": [],
+    "cart": [],
+    "searched": [],
+    "purchases": [],
+    "category_views": {},
+    "email": "priya@example.com",
+    "joined": "2025-01-01"
+  },
+  {
+    "id": "u3",
+    "username": "amit_fitness",
+    "password": "amit123",
+    "name": "Amit Kumar",
+    "avatar": "AK",
+    "interests": [
+      "Sports & Fitness",
+      "Electronics"
+    ],
+    "viewed": [],
+    "cart": [],
+    "searched": [],
+    "purchases": [],
+    "category_views": {},
+    "email": "amit@example.com",
+    "joined": "2025-01-01"
+  },
+  {
+    "id": "u4",
+    "username": "sneha_home",
+    "password": "sneha123",
+    "name": "Sneha Patel",
+    "avatar": "SP",
+    "interests": [
+      "Home & Kitchen",
+      "Beauty & Personal Care"
+    ],
+    "viewed": [],
+    "cart": [],
+    "searched": [],
+    "purchases": [],
+    "category_views": {},
+    "email": "sneha@example.com",
+    "joined": "2025-01-01"
+  },
+  {
+    "id": "u5",
+    "username": "vikram_gamer",
+    "password": "vikram123",
+    "name": "Vikram Rao",
+    "avatar": "VR",
+    "interests": [
+      "Electronics",
+      "Sports & Fitness"
+    ],
+    "viewed": [],
+    "cart": [],
+    "searched": [],
+    "purchases": [],
+    "category_views": {},
+    "email": "vikram@example.com",
+    "joined": "2025-01-01"
+  },
+  {
+    "id": "u6",
+    "username": "ananya_books",
+    "password": "ananya123",
+    "name": "Ananya Verma",
+    "avatar": "AV",
+    "interests": [
+      "Books",
+      "Fashion"
+    ],
+    "viewed": [],
+    "cart": [],
+    "searched": [],
+    "purchases": [],
+    "category_views": {},
+    "email": "ananya@example.com",
+    "joined": "2025-01-01"
+  },
+  {
+    "id": "u7",
+    "username": "rohit_budget",
+    "password": "rohit123",
+    "name": "Rohit Gupta",
+    "avatar": "RG",
+    "interests": [
+      "Electronics",
+      "Fashion",
+      "Books"
+    ],
+    "viewed": [],
+    "cart": [],
+    "searched": [],
+    "purchases": [],
+    "category_views": {},
+    "email": "rohit@example.com",
+    "joined": "2025-01-01"
+  },
+  {
+    "id": "u8",
+    "username": "Navya_beauty",
+    "password": "navya123",
+    "name": "Navya Sharma",
+    "avatar": "NS",
+    "interests": [
+      "Beauty & Personal Care",
+      "Fashion",
+      "Books"
+    ],
+    "viewed": [
+      91,
+      96,
+      92,
+      113,
+      116,
+      155
+    ],
+    "cart": [],
+    "searched": [],
+    "purchases": [],
+    "category_views": {
+      "Books": 5,
+      "Sports & Fitness": 1
+    },
+    "email": "navya@example.com",
+    "joined": "2025-01-01"
+  },
+  {
+    "id": "u920730",
+    "username": "admin",
+    "password": "admin",
+    "name": "Admin User",
+    "email": "admin@gmail.com",
+    "avatar": "AU",
+    "interests": [],
+    "viewed": [],
+    "cart": [],
+    "searched": [],
+    "purchases": [],
+    "category_views": {},
+    "joined": "2026-03-18"
+  },
+  {
+    "id": "u542705",
+    "username": "navya_beauty",
+    "password": "navya123",
+    "name": "Navya",
+    "email": "navyaji@example.com",
+    "avatar": "N",
+    "interests": [
+      "Fashion",
+      "Beauty & Personal Care"
+    ],
+    "viewed": [
+      162,
+      161
+    ],
+    "cart": [],
+    "searched": [],
+    "purchases": [],
+    "category_views": {
+      "Beauty & Personal Care": 2
+    },
+    "joined": "2026-03-18"
+  }
+]
