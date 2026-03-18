@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title id="auth-title">Login — ShopDesi</title>
+<title id="auth-title">Login — ShopDeals</title>
 <link rel="stylesheet" href="/static/css/style.css"/>
 <link rel="stylesheet" href="/static/css/auth.css"/>
 </head>
@@ -13,7 +13,7 @@
 
   <!-- Left panel -->
   <div class="auth-left">
-    <div class="auth-brand">🛒 ShopDesi</div>
+    <div class="auth-brand">🛒 ShopDeals</div>
     <h2 class="auth-tagline">India's Smartest<br/>Shopping Experience</h2>
     <p class="auth-desc">Personalised recommendations powered by Machine Learning — showing you exactly what you'll love.</p>
     <div class="auth-features">
@@ -32,7 +32,7 @@
       <div class="ac-head">
         <div class="ac-logo">🛒</div>
         <h3>Welcome Back!</h3>
-        <p>Login to your ShopDesi account</p>
+        <p>Login to your ShopDeals account</p>
       </div>
 
       <div id="login-error" class="auth-error" style="display:none"></div>
@@ -80,7 +80,7 @@
       <div class="ac-head">
         <div class="ac-logo">🛒</div>
         <h3>Create Account</h3>
-        <p>Join ShopDesi — get personalised picks from day one</p>
+        <p>Join ShopDeals — get personalised picks from day one</p>
       </div>
 
       <div id="signup-error" class="auth-error" style="display:none"></div>
@@ -147,13 +147,13 @@
 function showSignup() {
   document.getElementById('login-panel').style.display  = 'none';
   document.getElementById('signup-panel').style.display = '';
-  document.getElementById('auth-title').textContent = 'Sign Up — ShopDesi';
+  document.getElementById('auth-title').textContent = 'Sign Up — ShopDeals';
   history.replaceState({}, '', '/signup');
 }
 function showLogin() {
   document.getElementById('signup-panel').style.display = 'none';
   document.getElementById('login-panel').style.display  = '';
-  document.getElementById('auth-title').textContent = 'Login — ShopDesi';
+  document.getElementById('auth-title').textContent = 'Login — ShopDeals';
   history.replaceState({}, '', '/login');
 }
 
